@@ -18,7 +18,7 @@
 
 bool owf_128(const uint8_t* key, const uint8_t* input, uint8_t* output) {
   const faest_paramset_t paramset =  faest_get_paramset(FAEST_128S);
-  const int n = paramset.faest_param.n;
+  const int n = paramset.faest_param.pkSize * 8 - paramset.faest_param.lambda;
   const int output_len = (n+7)/8;
   int ret = 0;  
 
@@ -42,7 +42,7 @@ bool owf_128(const uint8_t* key, const uint8_t* input, uint8_t* output) {
 
 bool owf_192(const uint8_t* key, const uint8_t* input, uint8_t* output) {
   const faest_paramset_t paramset =  faest_get_paramset(FAEST_192S);
-  const int n = paramset.faest_param.n;
+  const int n = paramset.faest_param.pkSize * 8 - paramset.faest_param.lambda;
   const int output_len = (n+7)/8;
   int ret = 0;  
 
@@ -66,7 +66,7 @@ bool owf_192(const uint8_t* key, const uint8_t* input, uint8_t* output) {
 
 bool owf_256(const uint8_t* key, const uint8_t* input, uint8_t* output) {
   const faest_paramset_t paramset =  faest_get_paramset(FAEST_256S);
-  const int n = paramset.faest_param.n;
+  const int n = paramset.faest_param.pkSize * 8 - paramset.faest_param.lambda;
   const int output_len = (n+7)/8;
   int ret = 0;  
 

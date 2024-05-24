@@ -62,9 +62,6 @@ static void aes_prove_128(const uint8_t* w, const uint8_t* u, uint8_t** V, const
                           const uint8_t* out, const uint8_t* chall, uint8_t* a_tilde,
                           uint8_t* b_tilde, const faest_paramset_t* params) {
   const unsigned int l    = params->faest_param.l;
-  const unsigned int n = params->faest_param.n;
-  const unsigned int m = params->faest_param.m;
-  const unsigned int D = params->faest_param.d;
   const unsigned int lambda = params->faest_param.lambda;
   const unsigned int lambdaBytes = lambda / 8;
 
@@ -191,9 +188,6 @@ static uint8_t* aes_verify_128(const uint8_t* d, uint8_t** Q, const uint8_t* cha
   const unsigned int k1          = params->faest_param.k1;
   const unsigned int l           = params->faest_param.l;
   const unsigned int lambdaBytes = lambda / 8;
-  const unsigned int n = params->faest_param.n;
-  const unsigned int m = params->faest_param.m;
-  const unsigned int D = params->faest_param.d; 
 
 
   // Step: 1
