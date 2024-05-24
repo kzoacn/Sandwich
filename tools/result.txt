@@ -1,0 +1,35 @@
+Found ninja-1.10.0 at /usr/bin/ninja
+Cleaning... 0 files.                                                            
+[12/12] Linking target faest_128f/faest_128f_api_test
+[2/2] Linking target faest_128f/faest_128f_bench_c2
+# Testing: FAEST_128F (faest_128f)
+Sign/Verify test passed
+# Benching: FAEST_128F (faest_128f)
+FAEST_128F 8047 32 96
+4.37292 ms
+59.2537 ms
+48.4413 ms
+END
+# Building: FAEST_192F (faest_192f)
+[4/4] Linking target faest_192f/faest_192f_api_test
+[2/2] Linking target faest_192f/faest_192f_bench_c2
+# Testing: FAEST_192F (faest_192f)
+Sign/Verify test passed
+# Benching: FAEST_192F (faest_192f)
+FAEST_192F 21528 48 143
+9.86471 ms
+150.47 ms
+118.968 ms
+END
+# Building: FAEST_256F (faest_256f)
+[4/4] Linking target faest_256f/faest_256f_api_test
+[2/2] Linking target faest_256f/faest_256f_bench_c2
+# Testing: FAEST_256F (faest_256f)
+Sign/Verify test passed
+# Benching: FAEST_256F (faest_256f)
+FAEST_256F 41696 64 191
+17.496 ms
+319.417 ms
+255.286 ms
+END
+
