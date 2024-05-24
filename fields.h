@@ -26,6 +26,7 @@ FAEST_BEGIN_C_DECL
 // GF(2^256) with X^256 + X^10 + X^5 + X^2 + 1
 #define bf256_modulus (UINT64_C((1 << 10) | (1 << 5) | (1 << 2) | 1))
 
+#define bf96_modulus (UINT32_C((1 << 10) | (1 << 9) | (1 << 6) | 1))
  
 
 
@@ -45,6 +46,121 @@ typedef struct {
 typedef struct {
   uint64_t values[4];
 } bf256_t;
+
+typedef struct {
+  uint32_t u32[3];
+} bf96_t;
+
+//GF(2^96) implementation
+//bf96_zero
+ATTR_CONST ATTR_ALWAYS_INLINE static inline bf96_t bf96_zero(){
+  bf96_t ret;
+  ret.u32[0] = 0;
+  ret.u32[1] = 0;
+  ret.u32[2] = 0;
+  return ret;
+}
+//bf96_one
+ATTR_CONST ATTR_ALWAYS_INLINE static inline bf96_t bf96_one(){
+  bf96_t ret;
+  ret.u32[0] = 1;
+  ret.u32[1] = 0;
+  ret.u32[2] = 0;
+  return ret;
+}
+//bf96_and
+ATTR_CONST ATTR_ALWAYS_INLINE static inline bf96_t bf96_and(bf96_t lhs, bf96_t rhs) {
+  bf96_t ret;
+  ret.u32[0] = lhs.u32[0] & rhs.u32[0];
+  ret.u32[1] = lhs.u32[1] & rhs.u32[1];
+  ret.u32[2] = lhs.u32[2] & rhs.u32[2];
+  return ret;
+}
+//bf96_add
+ATTR_CONST ATTR_ALWAYS_INLINE static inline bf96_t bf96_add(bf96_t lhs, bf96_t rhs) {
+  bf96_t ret;
+  ret.u32[0] = lhs.u32[0] ^ rhs.u32[0];
+  ret.u32[1] = lhs.u32[1] ^ rhs.u32[1];
+  ret.u32[2] = lhs.u32[2] ^ rhs.u32[2];
+  return ret;
+}
+
+//bf96_flip
+ATTR_CONST ATTR_ALWAYS_INLINE static inline bf96_t bf96_flip(bf96_t x, bf64_t pos) {
+  if (pos < 32) {
+    x.u32[0] ^= (UINT32_C(1) << pos);
+  } else if (pos < 64) {
+    x.u32[1] ^= (UINT32_C(1) << (pos - 32));
+  } else {
+    x.u32[2] ^= (UINT32_C(1) << (pos - 64));
+  }
+  return x;
+}
+
+//bf96_shift_left_1
+ATTR_CONST ATTR_ALWAYS_INLINE static inline bf96_t bf96_shift_left_1(bf96_t value) {
+  value.u32[2] = (value.u32[2] << 1) | (value.u32[1] >> 31);
+  value.u32[1] = (value.u32[1] << 1) | (value.u32[0] >> 31);
+  value.u32[0] = value.u32[0] << 1;
+  return value;
+}
+
+//bf96_get_bit
+ATTR_CONST ATTR_ALWAYS_INLINE static inline bf64_t bf96_get_bit(bf96_t x, bf64_t pos) {
+  if (pos < 32) {
+    return (x.u32[0] >> pos) & 1;
+  } else if (pos < 64) {
+    return (x.u32[1] >> (pos - 32)) & 1;
+  } else {
+    return (x.u32[2] >> (pos - 64)) & 1;
+  }
+}
+//bf96_mul
+ATTR_CONST ATTR_ALWAYS_INLINE static inline bf96_t bf96_mul(bf96_t lhs, bf96_t rhs) {
+  bf96_t result = {0};
+  for (unsigned int idx = 0; idx != 96; ++idx) {
+    if(bf96_get_bit(rhs, idx))
+      result = bf96_add(result, lhs);
+    const uint32_t bit = bf96_get_bit(lhs, 95);
+    lhs                 = bf96_shift_left_1(lhs);
+    if(bit)
+      lhs.u32[0] ^= bf96_modulus;
+  }
+  return result;
+}
+
+//bf96_inv
+ATTR_CONST ATTR_ALWAYS_INLINE static inline bf96_t bf96_inv(bf96_t lhs) {
+  bf96_t t1 = lhs;
+  bf96_t t2 = lhs;
+  for (size_t i = 0; i < 96 - 2; i++) {
+    t2 = bf96_mul(t2, t2);
+    t1 = bf96_mul(t1, t2);
+  }
+  return bf96_mul(t1, t1);
+}
+
+//bf96_count
+ATTR_CONST ATTR_ALWAYS_INLINE static inline unsigned int bf96_count(bf96_t x) {
+  unsigned int count = 0;
+  for (unsigned int i = 0; i < 96; ++i) {
+    if(bf96_get_bit(x, i)) 
+      count++;
+  }
+  return count;
+}
+
+//bf96_from_bf64
+ATTR_CONST ATTR_ALWAYS_INLINE static inline bf96_t bf96_from_bf64(bf64_t src) {
+  bf96_t ret;
+  ret.u32[0] = src;
+  ret.u32[1] = 0;
+  ret.u32[2] = 0;
+  return ret;
+}
+
+
+
 
 // GF(2^8) implementation
 
@@ -193,6 +309,10 @@ ATTR_CONST ATTR_ALWAYS_INLINE static inline bf128_t bf128_from_bf64(bf64_t src) 
 ATTR_CONST ATTR_ALWAYS_INLINE static inline bf64_t bf128_get_bit(bf128_t x, bf64_t pos) {
   return (x.values[pos / 64] >> (pos % 64)) & 1;
 }
+//bf192_get_bit
+ATTR_CONST ATTR_ALWAYS_INLINE static inline bf64_t bf192_get_bit(bf192_t x, bf64_t pos) {
+  return (x.values[pos / 64] >> (pos % 64)) & 1;
+}
 
 ATTR_CONST ATTR_ALWAYS_INLINE static inline bf64_t bf256_get_bit(bf256_t x, bf64_t pos) {
   return (x.values[pos / 64] >> (pos % 64)) & 1;
@@ -240,6 +360,14 @@ ATTR_CONST bf128_t bf128_inv(bf128_t lhs);
 ATTR_PURE bf128_t bf128_sum_poly(const bf128_t* xs);
 
 // GF(2^192) implemenation
+
+ATTR_CONST
+static inline bf192_t bf192_shift_left_1(bf192_t value) {
+  value.values[2] = (value.values[2] << 1) | (value.values[1] >> 63);
+  value.values[1] = (value.values[1] << 1) | (value.values[0] >> 63);
+  value.values[0] = value.values[0] << 1;
+  return value;
+}
 
 ATTR_PURE ATTR_ALWAYS_INLINE static inline bf192_t bf192_load(const uint8_t* src) {
   bf192_t ret;

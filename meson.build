@@ -113,7 +113,7 @@ param_192s.set('M', 2196)
 param_192s.set('N', 948)
 param_192s.set('W', 366)
 param_192s.set('D', 6)
-#parameter_sets += param_192s
+parameter_sets += param_192s
 
 param_256s = configuration_data()
 param_256s.set('PARAM', '256S')
@@ -281,6 +281,7 @@ faest_sources = files(
   'vc.c',
   'vole.c',
   'sandwich_128.c',
+  'sandwich_192.c',
   'sandwich_256.c',
 )
 

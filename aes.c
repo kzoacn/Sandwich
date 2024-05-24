@@ -421,7 +421,30 @@ uint8_t* sandwich_extend_witness_128(const uint8_t* key, const uint8_t* input, c
 }
 
 uint8_t* sandwich_extend_witness_192(const uint8_t* key, const uint8_t* input, const faest_paramset_t* params) {
-  return NULL;
+  const unsigned int l          = params->faest_param.l;
+ 
+
+  uint8_t* w           = malloc((l + 7) / 8);
+  uint8_t* const w_out = w;
+  // w = 0
+  memset(w, 0, (l + 7) / 8);
+  
+
+  bf96_t k0,k1;
+  bf96_t out[2];
+  bf96_t *witness=(bf96_t*)w;
+  bf96_t mul_inputs[13];
+
+  memcpy(&k0,key,sizeof(k0));
+  memcpy(&k1,key+sizeof(k0),sizeof(k1));
+
+  sandwich_192_param_t param;
+  init_sandwich_192(&param);
+
+  sandwich_192(&param,k0,k1,out,witness,mul_inputs);
+
+  return w_out;
+  
 }
 
 uint8_t* sandwich_extend_witness_256(const uint8_t* key, const uint8_t* input, const faest_paramset_t* params) {

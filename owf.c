@@ -41,7 +41,26 @@ bool owf_128(const uint8_t* key, const uint8_t* input, uint8_t* output) {
 
 
 bool owf_192(const uint8_t* key, const uint8_t* input, uint8_t* output) {
-  return false;
+  const faest_paramset_t paramset =  faest_get_paramset(FAEST_192S);
+  const int n = paramset.faest_param.n;
+  const int output_len = (n+7)/8;
+  int ret = 0;  
+
+  memset(output, 0, output_len);
+
+  bf96_t k0,k1;
+  bf96_t witness[9];
+  bf96_t mul_inputs[13];
+
+  memcpy(&k0,key,sizeof(k0));
+  memcpy(&k1,key+sizeof(k0),sizeof(k1));
+
+  sandwich_192_param_t param;
+  init_sandwich_192(&param);
+
+  sandwich_192(&param,k0,k1,(bf96_t*)output,witness,mul_inputs);
+
+  return ret == 0;
 }
 
 

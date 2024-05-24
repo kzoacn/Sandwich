@@ -125,14 +125,6 @@ static inline bf192_t bf192_and(bf192_t lhs, bf192_t rhs) {
 }
 
 ATTR_CONST
-static inline bf192_t bf192_shift_left_1(bf192_t value) {
-  value.values[2] = (value.values[2] << 1) | (value.values[1] >> 63);
-  value.values[1] = (value.values[1] << 1) | (value.values[0] >> 63);
-  value.values[0] = value.values[0] << 1;
-  return value;
-}
-
-ATTR_CONST
 static inline uint64_t bf192_bit_to_uint64_mask(bf192_t value, unsigned int bit) {
   const unsigned int byte_idx = bit / 64;
   const unsigned int bit_idx  = bit % 64;
