@@ -133,7 +133,7 @@ param_256s.set('M', 2934)
 param_256s.set('N', 1266)
 param_256s.set('W', 489)
 param_256s.set('D', 6)
-#parameter_sets += param_256s
+parameter_sets += param_256s
 
 
 param_128f = configuration_data()

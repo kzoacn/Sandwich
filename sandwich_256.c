@@ -97,7 +97,7 @@ void init_sandwich_256(sandwich_256_param_t* para){
     // TODO : random constants
 
     alpha = bf256_zero();
-    for(int i=BITS-1;i>=0;i--){
+    for(int i=BITS*2-1;i>=0;i--){
         alpha = bf256_shift_left_1(alpha);
         if(alpha_256_s[i] == '1')
             alpha = bf256_add(alpha,bf256_one());
