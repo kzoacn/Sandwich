@@ -14,14 +14,11 @@
 #include "time.h"
 #include "sandwich.h"
 
-bool owf(const uint8_t* key, const uint8_t* input, uint8_t* output, int lambda) {
 
-  const faest_paramset_t paramset =  faest_get_paramset(lambda == 128 ? FAEST_128S : (lambda == 192 ? FAEST_192S : FAEST_256S));
+
+bool owf_128(const uint8_t* key, const uint8_t* input, uint8_t* output) {
+  const faest_paramset_t paramset =  faest_get_paramset(FAEST_128S);
   const int n = paramset.faest_param.n;
-  const int m = paramset.faest_param.m;
-  const int w = paramset.faest_param.w;
-  const int d = paramset.faest_param.d;
-  //const int lambda = paramset.faest_param.lambda;
   const int output_len = (n+7)/8;
   int ret = 0;  
 
@@ -40,7 +37,49 @@ bool owf(const uint8_t* key, const uint8_t* input, uint8_t* output, int lambda) 
   sandwich_128(&param,k0,k1,(bf64_t*)output,witness,mul_inputs);
 
   return ret == 0;
-}//TODO
+}
+
+
+bool owf_192(const uint8_t* key, const uint8_t* input, uint8_t* output) {
+  return false;
+}
+
+
+bool owf_256(const uint8_t* key, const uint8_t* input, uint8_t* output) {
+  const faest_paramset_t paramset =  faest_get_paramset(FAEST_256S);
+  const int n = paramset.faest_param.n;
+  const int output_len = (n+7)/8;
+  int ret = 0;  
+
+  memset(output, 0, output_len);
+
+  bf128_t k0,k1;
+  bf128_t witness[9];
+  bf128_t mul_inputs[13];
+
+  memcpy(&k0,key,sizeof(k0));
+  memcpy(&k1,key+sizeof(k0),sizeof(k1));
+
+  sandwich_256_param_t param;
+  init_sandwich_256(&param);
+
+  sandwich_256(&param,k0,k1,(bf128_t*)output,witness,mul_inputs);
+
+  return ret == 0;
+}
+
+
+bool owf(const uint8_t* key, const uint8_t* input, uint8_t* output, int lambda) {
+  if (lambda == 128) {
+    return owf_128(key, input, output);
+  } else if (lambda == 192) {
+    return owf_192(key, input, output);
+  } else if (lambda == 256) {
+    return owf_256(key, input, output);
+  } else {
+    return false;
+  }
+}
 
 bool faest_128s_owf(const uint8_t* key, const uint8_t* input, uint8_t* output){
   return owf(key, input, output, 128);

@@ -57,13 +57,6 @@ bf64_t bf64_inv(bf64_t in) {
 // GF(2^128) implementation
  
 
-ATTR_CONST
-static inline bf128_t bf128_and(bf128_t lhs, bf128_t rhs) {
-  for (unsigned int i = 0; i != ARRAY_SIZE(lhs.values); ++i) {
-    lhs.values[i] &= rhs.values[i];
-  }
-  return lhs;
-}
 
 
 ATTR_CONST
@@ -202,14 +195,6 @@ static inline bf256_t bf256_and(bf256_t lhs, bf256_t rhs) {
   return lhs;
 }
 
-ATTR_CONST
-static inline bf256_t bf256_shift_left_1(bf256_t value) {
-  value.values[3] = (value.values[3] << 1) | (value.values[2] >> 63);
-  value.values[2] = (value.values[2] << 1) | (value.values[1] >> 63);
-  value.values[1] = (value.values[1] << 1) | (value.values[0] >> 63);
-  value.values[0] = value.values[0] << 1;
-  return value;
-}
 
 ATTR_CONST
 static inline uint64_t bf256_bit_to_uint64_mask(bf256_t value, unsigned int bit) {

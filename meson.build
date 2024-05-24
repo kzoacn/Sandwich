@@ -281,6 +281,7 @@ faest_sources = files(
   'vc.c',
   'vole.c',
   'sandwich_128.c',
+  'sandwich_256.c',
 )
 
 # header files to install

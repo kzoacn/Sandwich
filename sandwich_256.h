@@ -16,7 +16,7 @@ typedef struct sandwich_256_param_t {
 
     bf_t alpha;
 
-    sf_t matMDS[3][3];
+    bf64_t matMDS[3][3];
     sf_t top_consts[4][2], bot_consts[4][2];
     sf_t top_P[4][BITS], bot_P[4][BITS];
     sf_t inv_P[BITS];

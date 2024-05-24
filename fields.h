@@ -144,10 +144,27 @@ ATTR_CONST ATTR_ALWAYS_INLINE static inline unsigned int bf64_count(bf64_t x) {
       count++;
   }
   return count;
-}
-
+} 
 // GF(2^128) implementation
 
+
+
+ATTR_CONST
+static inline bf128_t bf128_and(bf128_t lhs, bf128_t rhs) {
+  for (unsigned int i = 0; i != ARRAY_SIZE(lhs.values); ++i) {
+    lhs.values[i] &= rhs.values[i];
+  }
+  return lhs;
+}
+
+ATTR_CONST ATTR_ALWAYS_INLINE static inline bf128_t bf128_flip(bf128_t x, bf64_t pos) {
+  if (pos < 64) {
+    x.values[0] ^= (UINT64_C(1) << pos);
+  } else {
+    x.values[1] ^= (UINT64_C(1) << (pos - 64));
+  }
+  return x;
+}
 
 ATTR_CONST
 static inline bf128_t bf128_shift_left_1(bf128_t value) {
@@ -177,6 +194,18 @@ ATTR_CONST ATTR_ALWAYS_INLINE static inline bf64_t bf128_get_bit(bf128_t x, bf64
   return (x.values[pos / 64] >> (pos % 64)) & 1;
 }
 
+ATTR_CONST ATTR_ALWAYS_INLINE static inline bf64_t bf256_get_bit(bf256_t x, bf64_t pos) {
+  return (x.values[pos / 64] >> (pos % 64)) & 1;
+}
+
+ATTR_CONST ATTR_ALWAYS_INLINE static inline unsigned int bf128_count(bf128_t x) {
+  unsigned int count = 0;
+  for (unsigned int i = 0; i < 128; ++i) {
+    if(bf128_get_bit(x, i)) 
+      count++;
+  }
+  return count;
+}
 ATTR_CONST ATTR_ALWAYS_INLINE static inline bf128_t bf128_from_bf8(bf8_t src) {
   bf128_t ret;
   ret.values[0] = src;
@@ -278,6 +307,16 @@ ATTR_CONST bf192_t bf192_inv(bf192_t lhs);
 ATTR_PURE bf192_t bf192_sum_poly(const bf192_t* xs);
 
 // GF(2^256) implementation
+
+
+ATTR_CONST
+static inline bf256_t bf256_shift_left_1(bf256_t value) {
+  value.values[3] = (value.values[3] << 1) | (value.values[2] >> 63);
+  value.values[2] = (value.values[2] << 1) | (value.values[1] >> 63);
+  value.values[1] = (value.values[1] << 1) | (value.values[0] >> 63);
+  value.values[0] = value.values[0] << 1;
+  return value;
+}
 
 ATTR_PURE ATTR_ALWAYS_INLINE static inline bf256_t bf256_load(const uint8_t* src) {
   bf256_t ret;

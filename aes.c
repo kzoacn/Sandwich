@@ -392,14 +392,11 @@ void prg(const uint8_t* key, const uint8_t* iv, uint8_t* out, unsigned int seclv
 #endif
 }
 
-uint8_t* aes_extend_witness(const uint8_t* key, const uint8_t* input, const faest_paramset_t* params) {
-  const unsigned int lambda     = params->faest_param.lambda;
-  const unsigned int l          = params->faest_param.l;
 
-  const int n = params->faest_param.n;
-  const int m = params->faest_param.m;
-  //const int w = params->faest_param.w;
-  const int d = params->faest_param.d; 
+
+uint8_t* sandwich_extend_witness_128(const uint8_t* key, const uint8_t* input, const faest_paramset_t* params) {
+  const unsigned int l          = params->faest_param.l;
+ 
 
   uint8_t* w           = malloc((l + 7) / 8);
   uint8_t* const w_out = w;
@@ -421,4 +418,49 @@ uint8_t* aes_extend_witness(const uint8_t* key, const uint8_t* input, const faes
   sandwich_128(&param,k0,k1,out,witness,mul_inputs);
 
   return w_out;
+}
+
+uint8_t* sandwich_extend_witness_192(const uint8_t* key, const uint8_t* input, const faest_paramset_t* params) {
+  return NULL;
+}
+
+uint8_t* sandwich_extend_witness_256(const uint8_t* key, const uint8_t* input, const faest_paramset_t* params) {
+  const unsigned int l          = params->faest_param.l;
+ 
+
+  uint8_t* w           = malloc((l + 7) / 8);
+  uint8_t* const w_out = w;
+  // w = 0
+  memset(w, 0, (l + 7) / 8);
+  
+
+  bf128_t k0,k1;
+  bf128_t out[2];
+  bf128_t *witness=(bf128_t*)w;
+  bf128_t mul_inputs[13];
+
+  memcpy(&k0,key,sizeof(k0));
+  memcpy(&k1,key+sizeof(k0),sizeof(k1));
+
+  sandwich_256_param_t param;
+  init_sandwich_256(&param);
+
+  sandwich_256(&param,k0,k1,out,witness,mul_inputs);
+
+  return w_out;
+  
+}
+
+uint8_t* aes_extend_witness(const uint8_t* key, const uint8_t* input, const faest_paramset_t* params) {
+  const unsigned int lambda     = params->faest_param.lambda;
+
+  if (lambda == 128) {
+    return sandwich_extend_witness_128(key, input, params);
+  } else if (lambda == 192) {
+    return sandwich_extend_witness_192(key, input, params);
+  } else if (lambda == 256) {
+    return sandwich_extend_witness_256(key, input, params);
+  } else {
+    return NULL;
+  }
 }
