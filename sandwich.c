@@ -57,38 +57,6 @@
 #define inv_P para->inv_P
 #define matMDS para->matMDS
 
-/*
-const sf_t matMDS[3][3]={
-        {1,2,1},
-        {2,1,1},
-        {1,1,2}
-    };
-
-sf_t top_consts[4][2], bot_consts[4][2];
-sf_t top_P[4][BITS], bot_P[4][BITS];
-sf_t inv_P[BITS];
-sf_t inv_const = 0;
-
-
-sf_t reconstruct(bf_t a[BITS],bf_t b[BITS]){
-    sf_t res = 0;
-    for(int i=0;i<BITS;i++){
-        bf_t shared = bf_add(a[i],b[i]);
-        if(shared.values[0])
-            res = sf_flip(res,i);
-    }
-    return res;
-}
-
-sf_t reconstruct_single(bf_t a[BITS]){
-    sf_t res = 0;
-    for(int i=0;i<BITS;i++){
-        bf_t shared = a[i];
-        if(shared.values[0])
-            res = sf_flip(res,i);
-    }
-    return res;
-}*/
 
 bf_t bf_public_128(int id, int bit,bf_t delta){
     if(bit==0)

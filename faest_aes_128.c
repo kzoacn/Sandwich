@@ -23,14 +23,12 @@
 
 #define bf_t bf128_t
 #define bf_load bf128_load
-#define bf_store bf128_store
-#define bf_from_bit bf128_from_bit
+#define bf_store bf128_store 
 #define bf_zero bf128_zero
 #define bf_one bf128_one
 #define bf_add bf128_add
 #define bf_mul bf128_mul
-#define bf_sum_poly bf128_sum_poly
-#define bf_inv bf128_inv
+#define bf_sum_poly bf128_sum_poly 
 #define zk_hash zk_hash_128 
 
 #define sf_t bf64_t
