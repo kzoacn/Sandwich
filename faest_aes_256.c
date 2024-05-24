@@ -16,19 +16,30 @@
 #include "time.h"
 #include <string.h>
 #include <stdlib.h>
- 
+#include "sandwich.h"
+
+
+#define BITS 128 
 
 #define bf_t bf256_t
 #define bf_load bf256_load
-#define bf_store bf256_store
-#define bf_from_bit bf256_from_bit
+#define bf_store bf256_store 
 #define bf_zero bf256_zero
 #define bf_one bf256_one
 #define bf_add bf256_add
 #define bf_mul bf256_mul
-#define bf_sum_poly bf256_sum_poly
-#define bf_inv bf256_inv
+#define bf_sum_poly bf256_sum_poly 
 #define zk_hash zk_hash_256 
+
+#define sf_t bf128_t
+#define sandwich_param_t sandwich_256_param_t
+#define init_sandwich init_sandwich_256
+#define sandwich sandwich_256
+#define bf_public bf_public_256
+#define sandwich_bitlevel sandwich_bitlevel_256
+#define bf_convert_combine bf256_convert_combine
+#define sf_to_bf bf128_to_bf256
+#define sf_get_bit bf128_get_bit
 
 
 static bf_t* column_to_row_major_and_shrink_V_256(uint8_t** v, unsigned int ell) {
@@ -70,139 +81,91 @@ static void aes_prove_256(const uint8_t* w, const uint8_t* u, uint8_t** V, const
   const unsigned int length_a = m/D*2 + 1;
   bf_t* A0                 = malloc(sizeof(bf_t) * length_a);
   bf_t* A1                 = malloc(sizeof(bf_t) * length_a);
-  uint8_t* e = malloc(m);
-  uint8_t* compact_e = malloc((m-n)/D*(D-1));
-  bf_t* bf_e = malloc(sizeof(bf_t) * m);
-  uint8_t* y=malloc(n);
-  uint8_t *buffer;
-  uint8_t *R = malloc(m*lambdaBytes);
-  uint8_t *S = malloc(m*lambdaBytes);
-  uint8_t *buffer2 = malloc(m*2*lambdaBytes);
-  bf_t* tmp = malloc(sizeof(bf_t) * m);
+
+  //fill out A0 A1
 
   for(uint32_t i=0;i<length_a;i++){
     A0[i] = bf_zero();
     A1[i] = bf_zero();
   }
 
-  //generate mat H
- 
-  buffer=generate_H_mat(n,m,input,lambda); 
-  
-  //unpack out to y
 
-  for(uint32_t i=0;i<n;i++){
-    y[i] = out[i/8] >> (i%8) & 1;
-  }
   
-  //unpack w to compact_e
+  sf_t k0,k1;
+  sf_t witness[9];
+  sf_t mul_inputs[13];
+  sf_t _out[2];
+  k0 = ((const sf_t*)w)[0];
+  k1 = ((const sf_t*)w)[1];
 
-  for(uint32_t i=0;i<(m-n)/D*(D-1);i++){
-    compact_e[i] = w[i/8] >> (i%8) & 1;
-  }
-  
-  uint32_t cur = 0;
-  for(uint32_t i=n;i<m;i++){
-    if(i%D==D-1){
-      e[i]=1;
-      bf_e[i]=bf_zero();
-      for(uint32_t j=1;j<D;j++){
-         e[i]^=e[i-j];
-         bf_e[i]=bf_add(bf_e[i],bf_e[i-j]);
-      }
-    }else{
-      e[i]=compact_e[cur];
-      bf_e[i]=bf_add(bf_v[cur],bf_zero());
-      cur++;
+  sandwich_param_t param;
+  init_sandwich(&param);
+
+  sandwich(&param,k0,k1,_out,witness,mul_inputs);
+
+  bf_t bf_out[2][BITS];
+  bf_t bf_witness[9][BITS];
+  bf_t bf_mul_inputs[13][BITS];
+  bf_t bf_newk[2][BITS];
+
+  bf_t fake_delta=bf_one();
+
+  for(int i=0;i<2;i++){
+    for(int j=0;j<BITS;j++){
+      bf_out[i][j]=bf_public(PROVER,sf_get_bit(_out[i],j),fake_delta);
     }
   }
- 
-  for(uint32_t i=0;i<n;i++){
-    e[i]=y[i];
-    bf_e[i]=bf_zero();
 
-    for(uint32_t j=n;j<m;j++){
-      int index = i*(m-n)+j-n;
-      int h=buffer[index/8]>>(index%8)&1;
-      e[i]^=(h&e[j]);
-      if(h) 
-        bf_e[i]=bf_add(bf_e[i],bf_e[j]);
-      else
-        bf_e[i]=bf_add(bf_e[i],bf_zero());
+  for(int i=0;i<9;i++){
+    for(int j=0;j<BITS;j++){
+      bf_witness[i][j]=bf_v[i*BITS+j];
     }
- 
-  }  
-
-  //double ck2=clock();
-  
-    H_c_context_t ctx;
-    H_c_init(&ctx, lambda);
-    H_c_update(&ctx, chall, lambdaBytes);
-    H_c_final(&ctx, buffer2,m*2*lambdaBytes);
-    memcpy(R,buffer2,m*lambdaBytes);
-    memcpy(S,buffer2+m*lambdaBytes,m*lambdaBytes); 
-  
-
-
-
-  for(uint32_t i=0;i<m/D;i++){
-    bf_t z1 = bf_zero();
-    bf_t z2 = bf_zero();
-    bf_t z3 = bf_zero();
-    bf_t Mz1 = bf_zero();
-    bf_t Mz2 = bf_zero();
-    bf_t Mz3 = bf_zero();
-
-    for(uint32_t j=0;j<D;j++){ 
-      uint32_t index = i*D+j;
-      bf_t r = bf_load(R+index*lambdaBytes);
-      bf_t s = bf_load(S+index*lambdaBytes);
-      bf_t rs = bf_mul(r,s);
-      if(e[index]==1){
-        z1 = bf_add(z1,r);
-        z2 = bf_add(z2,s);
-        z3 = bf_add(z3,rs);
-      }else{
-        z1 = bf_add(z1,bf_zero());
-        z2 = bf_add(z2,bf_zero());
-        z3 = bf_add(z3,bf_zero());
-      }
-
-      Mz1 = bf_add(Mz1,bf_mul(r,bf_e[index]));
-      Mz2 = bf_add(Mz2,bf_mul(s,bf_e[index]));
-      Mz3 = bf_add(Mz3,bf_mul(rs,bf_e[index]));
-    }
-    // prove z1*z2=z3
-
-
-    A0[i]=bf_mul(Mz1,Mz2);
-    A1[i]=bf_add(bf_add(bf_mul(Mz1,z2),bf_mul(Mz2,z1)),Mz3);
   }
- 
-  //double ck3=clock();
+  
 
-  for(uint32_t i=0;i<m/D;i++){
-    bf_t s = bf_zero();
-    for(uint32_t j=0;j<D;j++){
-      uint32_t index=i*D+j;
-      s=bf_add(s,bf_e[index]);
-    }
-    A0[i+m/D]=bf_zero();
-    A1[i+m/D]=s;
+  sandwich_bitlevel(&param,PROVER,bf_out,bf_witness,fake_delta,bf_mul_inputs,bf_newk);
+
+  //bf_t bf_w = sf_to_bf128(&param,witness[3]);
+
+  int w_pos[] = {2,3,4,6,7,8};
+  int mul_0_pos[] = {0,2,4,7,9,11};
+  int mul_1_pos[] = {1,3,5,8,10,12};
+
+  for(int i=0;i<6;i++){
+
+    int p = w_pos[i];
+    int x = mul_0_pos[i];
+    int y = mul_1_pos[i];
+
+    bf_t bf_w_mac = bf_convert_combine(&param,bf_witness[p]);
+
+    bf_t bf_mul_0 = sf_to_bf(&param,mul_inputs[x]);
+    bf_t bf_mul_1 = sf_to_bf(&param,mul_inputs[y]);
+
+    bf_t bf_mul_0_mac = bf_convert_combine(&param,bf_mul_inputs[x]);
+    bf_t bf_mul_1_mac = bf_convert_combine(&param,bf_mul_inputs[y]);
+
+    A0[i]=bf_mul(bf_mul_0_mac,bf_mul_1_mac);
+    A1[i]=bf_add(bf_add(bf_mul(bf_mul_0_mac,bf_mul_1),bf_mul(bf_mul_1_mac,bf_mul_0)),bf_w_mac);
+
   }
 
-  //double ck4=clock();
+  bf_t bf_mul_0 = sf_to_bf(&param,witness[5]);
+  bf_t bf_mul_1 = sf_to_bf(&param,mul_inputs[6]);
 
-  free(tmp);
-  free(e);
-  free(compact_e);
-  free(bf_e);
-  free(y);
-  free(buffer);
-  free(R);
-  free(S);
-  free(buffer2);
-  
+  bf_t bf_mul_0_mac = bf_convert_combine(&param,bf_witness[5]);
+  bf_t bf_mul_1_mac = bf_convert_combine(&param,bf_mul_inputs[6]);
+
+  A0[6] = bf_mul(bf_mul_0_mac,bf_mul_1_mac);
+  A1[6] = bf_add(bf_add(bf_mul(bf_mul_0_mac,bf_mul_1),bf_mul(bf_mul_1_mac,bf_mul_0)),bf_zero());
+
+  for(int i=0;i<2;i++){
+    bf_t newk = bf_convert_combine(&param,bf_newk[i]);
+    bf_t oldk = bf_convert_combine(&param,bf_witness[i]);
+    A0[7+i] = bf_add(newk,oldk); 
+    A1[7+i] = bf_zero();
+  }
+
   // Step: 16..18
   A1[length_a - 1] = bf_load(u + l / 8);
   A0[length_a - 1] = bf_sum_poly(bf_v + l);
@@ -211,16 +174,9 @@ static void aes_prove_256(const uint8_t* w, const uint8_t* u, uint8_t** V, const
 
   zk_hash(a_tilde, chall, A1, length_a - 1);
   zk_hash(b_tilde, chall, A0, length_a - 1);
-  //double ck5=clock();
 
   free(A0);
   free(A1);
- 
-  // printf("Total time for circuit prove: %f ms\n",(ck5-ck1)/CLOCKS_PER_SEC*1000);
-  // printf("Time for computing e: %f ms\n",(ck2-ck1)/CLOCKS_PER_SEC*1000);
-  // printf("Time for computing |e_i|<=1: %f ms\n",(ck3-ck2)/CLOCKS_PER_SEC*1000);
-  // printf("Time for computing 1*u=1: %f ms\n",(ck4-ck3)/CLOCKS_PER_SEC*1000);
-  // printf("Time for computing universal hash: %f ms\n",(ck5-ck4)/CLOCKS_PER_SEC*1000);
 
 }
 
@@ -239,18 +195,9 @@ static uint8_t* aes_verify_256(const uint8_t* d, uint8_t** Q, const uint8_t* cha
   const unsigned int m = params->faest_param.m;
   const unsigned int D = params->faest_param.d; 
 
-  uint8_t* compact_e = malloc((m-n)/D*(D-1));
-  bf_t* bf_e = malloc(sizeof(bf_t) * m);
-  uint8_t* y=malloc(n);
-  uint8_t *buffer;
-  uint8_t *R = malloc(m*lambdaBytes);
-  uint8_t *S = malloc(m*lambdaBytes);
-  uint8_t *buffer2 = malloc(m*2*lambdaBytes);
-
-  
 
   // Step: 1
-  const uint8_t* delta = chall_3;
+  const uint8_t* _delta = chall_3;
   // Step: 2,3
   // do nothing
 
@@ -279,81 +226,65 @@ static uint8_t* aes_verify_256(const uint8_t* d, uint8_t** Q, const uint8_t* cha
   }
 
 
-  //generate mat H
-  buffer=generate_H_mat(n,m,input,lambda);
-  
-  //unpack out to y
-
-  for(uint32_t i=0;i<n;i++){
-    y[i] = out[i/8] >> (i%8) & 1;
-  }
-  
-  //unpack w to compact_e
-  uint32_t cur = 0;
-  for(uint32_t i=n;i<m;i++){
-    if(i%D==D-1){
-      bf_e[i]=bf_load(delta);
-      for(uint32_t j=1;j<D;j++){
-         bf_e[i]=bf_add(bf_e[i],bf_e[i-j]);
-      }
-    }else{
-      bf_e[i]=bf_add(bf_q[cur],bf_zero());
-      cur++;
-    }
-  }
-  for(uint32_t i=0;i<n;i++){
-    bf_e[i]=bf_zero();
-    if(y[i])
-      bf_e[i]=bf_load(delta);
-    for(uint32_t j=n;j<m;j++){
-      if(getH(i,j,n,m,buffer)) 
-        bf_e[i]=bf_add(bf_e[i],bf_e[j]);
-    }
-  } 
-   
-    H_c_context_t ctx;
-    H_c_init(&ctx, lambda);
-    H_c_update(&ctx, chall_2, lambdaBytes);
-    H_c_final(&ctx, buffer2,m*2*lambdaBytes);
-    memcpy(R,buffer2,m*lambdaBytes);
-    memcpy(S,buffer2+m*lambdaBytes,m*lambdaBytes);  
+  //fill out B0 
+  sandwich_param_t param;
+  init_sandwich(&param);
  
-  for(uint32_t i=0;i<m/D;i++){
-    bf_t Kz1 = bf_zero();
-    bf_t Kz2 = bf_zero();
-    bf_t Kz3 = bf_zero();
 
-    for(uint32_t j=0;j<D;j++){ 
-      uint32_t index = i*D+j;
-      bf_t r = bf_load(R+index*lambdaBytes);
-      bf_t s = bf_load(S+index*lambdaBytes); 
-      Kz1 = bf_add(Kz1,bf_mul(r,bf_e[index]));
-      Kz2 = bf_add(Kz2,bf_mul(s,bf_e[index]));
+  bf_t bf_out[2][BITS];
+  bf_t bf_witness[9][BITS];
+  bf_t bf_mul_inputs[13][BITS];
+  bf_t bf_newk[2][BITS];
+  sf_t *_out=(sf_t*)out;
 
-      Kz3 = bf_add(Kz3,bf_mul(bf_mul(r,s),bf_e[index]));
+  bf_t delta = bf_load(_delta);
+
+  for(int i=0;i<2;i++){
+    for(int j=0;j<BITS;j++){
+      bf_out[i][j]=bf_public(VERIFIER,sf_get_bit(_out[i],j),delta);
     }
-    // prove z1*z2=z3
-
-    B_0[i] = bf_add( bf_mul(Kz1,Kz2) , bf_mul(Kz3,bf_load(delta)));
-  }
-  for(uint32_t i=0;i<m/D;i++){
-    bf_t s = bf_zero();
-    for(uint32_t j=0;j<D;j++){
-      uint32_t index=i*D+j;
-      s=bf_add(s,bf_e[index]);
-    }
-    B_0[i+m/D]=bf_add( bf_mul(s,bf_load(delta)),bf_mul(bf_load(delta),bf_load(delta)) );
   }
 
-  
-  free(compact_e);
-  free(bf_e);
-  free(y);
-  free(buffer);
-  free(R);
-  free(S);
-  free(buffer2);
-  
+  for(int i=0;i<9;i++){
+    for(int j=0;j<BITS;j++){
+      bf_witness[i][j]=bf_q[i*BITS+j];
+    }
+  }
+
+  sandwich_bitlevel(&param,VERIFIER,bf_out,bf_witness,delta,bf_mul_inputs,bf_newk);
+
+
+  int w_pos[] = {2,3,4,6,7,8};
+  int mul_0_pos[] = {0,2,4,7,9,11};
+  int mul_1_pos[] = {1,3,5,8,10,12};
+
+  for(int i=0;i<6;i++){
+
+    int p = w_pos[i];
+    int x = mul_0_pos[i];
+    int y = mul_1_pos[i];
+
+    bf_t bf_w_mac = bf_convert_combine(&param,bf_witness[p]);
+
+    bf_t bf_mul_0_mac = bf_convert_combine(&param,bf_mul_inputs[x]);
+    bf_t bf_mul_1_mac = bf_convert_combine(&param,bf_mul_inputs[y]);
+
+    B_0[i] = bf_add( bf_mul(bf_mul_0_mac,bf_mul_1_mac) , bf_mul(bf_w_mac,delta));
+  }
+
+
+  bf_t bf_mul_0_mac = bf_convert_combine(&param,bf_witness[5]);
+  bf_t bf_mul_1_mac = bf_convert_combine(&param,bf_mul_inputs[6]);
+
+  B_0[6] = bf_add( bf_mul(bf_mul_0_mac,bf_mul_1_mac) , bf_mul(delta,delta));
+
+
+  for(int i=0;i<2;i++){
+    bf_t newk = bf_convert_combine(&param,bf_newk[i]);
+    bf_t oldk = bf_convert_combine(&param,bf_witness[i]);
+    B_0[7+i] = bf_add(newk,oldk); 
+  }
+
   // Step: 20
   B_0[length_b - 1] = bf_sum_poly(bf_q + l);
   free(bf_q);
@@ -364,7 +295,7 @@ static uint8_t* aes_verify_256(const uint8_t* d, uint8_t** Q, const uint8_t* cha
   free(B_0);
 
   bf_t bf_qtilde = bf_load(q_tilde);
-  bf_store(q_tilde, bf_add(bf_qtilde, bf_mul(bf_load(a_tilde), bf_load(delta))));
+  bf_store(q_tilde, bf_add(bf_qtilde, bf_mul(bf_load(a_tilde), delta)));
 
   return q_tilde;
 }

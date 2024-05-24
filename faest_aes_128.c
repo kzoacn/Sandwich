@@ -299,3 +299,26 @@ static uint8_t* aes_verify_128(const uint8_t* d, uint8_t** Q, const uint8_t* cha
 
   return q_tilde;
 }
+
+
+#undef BITS 
+
+#undef bf_t 
+#undef bf_load 
+#undef bf_store 
+#undef bf_zero 
+#undef bf_one 
+#undef bf_add 
+#undef bf_mul 
+#undef bf_sum_poly 
+#undef zk_hash 
+
+#undef sf_t 
+#undef sandwich_param_t 
+#undef init_sandwich 
+#undef sandwich 
+#undef bf_public 
+#undef sandwich_bitlevel 
+#undef bf_convert_combine 
+#undef sf_to_bf 
+#undef sf_get_bit 
