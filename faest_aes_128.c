@@ -33,6 +33,16 @@
 #define bf_inv bf128_inv
 #define zk_hash zk_hash_128 
 
+#define sf_t bf64_t
+#define sandwich_param_t sandwich_128_param_t
+#define init_sandwich init_sandwich_128
+#define sandwich sandwich_128
+#define bf_public bf_public_128
+#define sandwich_bitlevel sandwich_bitlevel_128
+#define bf_convert_combine bf128_convert_combine
+#define sf_to_bf bf64_to_bf128
+#define sf_get_bit bf64_get_bit
+
 
 static bf_t* column_to_row_major_and_shrink_V_128(uint8_t** v, unsigned int ell) {
   // V is \hat \ell times \lambda matrix over F_2
@@ -83,17 +93,17 @@ static void aes_prove_128(const uint8_t* w, const uint8_t* u, uint8_t** V, const
 
 
   
-  bf64_t k0,k1;
-  bf64_t witness[9];
-  bf64_t mul_inputs[13];
-  bf64_t _out[2];
-  k0 = ((const bf64_t*)w)[0];
-  k1 = ((const bf64_t*)w)[1];
+  sf_t k0,k1;
+  sf_t witness[9];
+  sf_t mul_inputs[13];
+  sf_t _out[2];
+  k0 = ((const sf_t*)w)[0];
+  k1 = ((const sf_t*)w)[1];
 
-  sandwich_128_param_t param;
-  init_sandwich_128(&param);
+  sandwich_param_t param;
+  init_sandwich(&param);
 
-  sandwich_128(&param,k0,k1,_out,witness,mul_inputs);
+  sandwich(&param,k0,k1,_out,witness,mul_inputs);
 
   bf_t bf_out[2][BITS];
   bf_t bf_witness[9][BITS];
@@ -104,7 +114,7 @@ static void aes_prove_128(const uint8_t* w, const uint8_t* u, uint8_t** V, const
 
   for(int i=0;i<2;i++){
     for(int j=0;j<BITS;j++){
-      bf_out[i][j]=bf_public_128(PROVER,bf64_get_bit(_out[i],j),fake_delta);
+      bf_out[i][j]=bf_public(PROVER,sf_get_bit(_out[i],j),fake_delta);
     }
   }
 
@@ -115,9 +125,9 @@ static void aes_prove_128(const uint8_t* w, const uint8_t* u, uint8_t** V, const
   }
   
 
-  sandwich_bitlevel_128(&param,PROVER,bf_out,bf_witness,fake_delta,bf_mul_inputs,bf_newk);
+  sandwich_bitlevel(&param,PROVER,bf_out,bf_witness,fake_delta,bf_mul_inputs,bf_newk);
 
-  //bf_t bf_w = bf64_to_bf128(&param,witness[3]);
+  //bf_t bf_w = sf_to_bf128(&param,witness[3]);
 
   int w_pos[] = {2,3,4,6,7,8};
   int mul_0_pos[] = {0,2,4,7,9,11};
@@ -129,31 +139,31 @@ static void aes_prove_128(const uint8_t* w, const uint8_t* u, uint8_t** V, const
     int x = mul_0_pos[i];
     int y = mul_1_pos[i];
 
-    bf_t bf_w_mac = bf128_convert_combine(&param,bf_witness[p]);
+    bf_t bf_w_mac = bf_convert_combine(&param,bf_witness[p]);
 
-    bf_t bf_mul_0 = bf64_to_bf128(&param,mul_inputs[x]);
-    bf_t bf_mul_1 = bf64_to_bf128(&param,mul_inputs[y]);
+    bf_t bf_mul_0 = sf_to_bf(&param,mul_inputs[x]);
+    bf_t bf_mul_1 = sf_to_bf(&param,mul_inputs[y]);
 
-    bf_t bf_mul_0_mac = bf128_convert_combine(&param,bf_mul_inputs[x]);
-    bf_t bf_mul_1_mac = bf128_convert_combine(&param,bf_mul_inputs[y]);
+    bf_t bf_mul_0_mac = bf_convert_combine(&param,bf_mul_inputs[x]);
+    bf_t bf_mul_1_mac = bf_convert_combine(&param,bf_mul_inputs[y]);
 
     A0[i]=bf_mul(bf_mul_0_mac,bf_mul_1_mac);
     A1[i]=bf_add(bf_add(bf_mul(bf_mul_0_mac,bf_mul_1),bf_mul(bf_mul_1_mac,bf_mul_0)),bf_w_mac);
 
   }
 
-  bf_t bf_mul_0 = bf64_to_bf128(&param,witness[5]);
-  bf_t bf_mul_1 = bf64_to_bf128(&param,mul_inputs[6]);
+  bf_t bf_mul_0 = sf_to_bf(&param,witness[5]);
+  bf_t bf_mul_1 = sf_to_bf(&param,mul_inputs[6]);
 
-  bf_t bf_mul_0_mac = bf128_convert_combine(&param,bf_witness[5]);
-  bf_t bf_mul_1_mac = bf128_convert_combine(&param,bf_mul_inputs[6]);
+  bf_t bf_mul_0_mac = bf_convert_combine(&param,bf_witness[5]);
+  bf_t bf_mul_1_mac = bf_convert_combine(&param,bf_mul_inputs[6]);
 
   A0[6] = bf_mul(bf_mul_0_mac,bf_mul_1_mac);
   A1[6] = bf_add(bf_add(bf_mul(bf_mul_0_mac,bf_mul_1),bf_mul(bf_mul_1_mac,bf_mul_0)),bf_zero());
 
   for(int i=0;i<2;i++){
-    bf_t newk = bf128_convert_combine(&param,bf_newk[i]);
-    bf_t oldk = bf128_convert_combine(&param,bf_witness[i]);
+    bf_t newk = bf_convert_combine(&param,bf_newk[i]);
+    bf_t oldk = bf_convert_combine(&param,bf_witness[i]);
     A0[7+i] = bf_add(newk,oldk); 
     A1[7+i] = bf_zero();
   }
@@ -166,16 +176,9 @@ static void aes_prove_128(const uint8_t* w, const uint8_t* u, uint8_t** V, const
 
   zk_hash(a_tilde, chall, A1, length_a - 1);
   zk_hash(b_tilde, chall, A0, length_a - 1);
-  //double ck5=clock();
 
   free(A0);
   free(A1);
- 
-  // printf("Total time for circuit prove: %f ms\n",(ck5-ck1)/CLOCKS_PER_SEC*1000);
-  // printf("Time for computing e: %f ms\n",(ck2-ck1)/CLOCKS_PER_SEC*1000);
-  // printf("Time for computing |e_i|<=1: %f ms\n",(ck3-ck2)/CLOCKS_PER_SEC*1000);
-  // printf("Time for computing 1*u=1: %f ms\n",(ck4-ck3)/CLOCKS_PER_SEC*1000);
-  // printf("Time for computing universal hash: %f ms\n",(ck5-ck4)/CLOCKS_PER_SEC*1000);
 
 }
 
@@ -225,31 +228,22 @@ static uint8_t* aes_verify_128(const uint8_t* d, uint8_t** Q, const uint8_t* cha
   }
 
 
-  //fill out B0
-  
-  //bf64_t k0,k1;
-  //bf64_t witness[9];
-  //bf64_t mul_inputs[13];
-  //bf64_t _out[2];
-  //k0 = ((const bf64_t*)w)[0];
-  //k1 = ((const bf64_t*)w)[1];
-
-  sandwich_128_param_t param;
-  init_sandwich_128(&param);
-
-  //sandwich_128(&param,k0,k1,_out,witness,mul_inputs);
+  //fill out B0 
+  sandwich_param_t param;
+  init_sandwich(&param);
+ 
 
   bf_t bf_out[2][BITS];
   bf_t bf_witness[9][BITS];
   bf_t bf_mul_inputs[13][BITS];
   bf_t bf_newk[2][BITS];
-  bf64_t *_out=(bf64_t*)out;
+  sf_t *_out=(sf_t*)out;
 
   bf_t delta = bf_load(_delta);
 
   for(int i=0;i<2;i++){
     for(int j=0;j<BITS;j++){
-      bf_out[i][j]=bf_public_128(VERIFIER,bf64_get_bit(_out[i],j),delta);
+      bf_out[i][j]=bf_public(VERIFIER,sf_get_bit(_out[i],j),delta);
     }
   }
 
@@ -259,7 +253,7 @@ static uint8_t* aes_verify_128(const uint8_t* d, uint8_t** Q, const uint8_t* cha
     }
   }
 
-  sandwich_bitlevel_128(&param,VERIFIER,bf_out,bf_witness,delta,bf_mul_inputs,bf_newk);
+  sandwich_bitlevel(&param,VERIFIER,bf_out,bf_witness,delta,bf_mul_inputs,bf_newk);
 
 
   int w_pos[] = {2,3,4,6,7,8};
@@ -272,24 +266,24 @@ static uint8_t* aes_verify_128(const uint8_t* d, uint8_t** Q, const uint8_t* cha
     int x = mul_0_pos[i];
     int y = mul_1_pos[i];
 
-    bf_t bf_w_mac = bf128_convert_combine(&param,bf_witness[p]);
+    bf_t bf_w_mac = bf_convert_combine(&param,bf_witness[p]);
 
-    bf_t bf_mul_0_mac = bf128_convert_combine(&param,bf_mul_inputs[x]);
-    bf_t bf_mul_1_mac = bf128_convert_combine(&param,bf_mul_inputs[y]);
+    bf_t bf_mul_0_mac = bf_convert_combine(&param,bf_mul_inputs[x]);
+    bf_t bf_mul_1_mac = bf_convert_combine(&param,bf_mul_inputs[y]);
 
     B_0[i] = bf_add( bf_mul(bf_mul_0_mac,bf_mul_1_mac) , bf_mul(bf_w_mac,delta));
   }
 
 
-  bf_t bf_mul_0_mac = bf128_convert_combine(&param,bf_witness[5]);
-  bf_t bf_mul_1_mac = bf128_convert_combine(&param,bf_mul_inputs[6]);
+  bf_t bf_mul_0_mac = bf_convert_combine(&param,bf_witness[5]);
+  bf_t bf_mul_1_mac = bf_convert_combine(&param,bf_mul_inputs[6]);
 
   B_0[6] = bf_add( bf_mul(bf_mul_0_mac,bf_mul_1_mac) , bf_mul(delta,delta));
 
 
   for(int i=0;i<2;i++){
-    bf_t newk = bf128_convert_combine(&param,bf_newk[i]);
-    bf_t oldk = bf128_convert_combine(&param,bf_witness[i]);
+    bf_t newk = bf_convert_combine(&param,bf_newk[i]);
+    bf_t oldk = bf_convert_combine(&param,bf_witness[i]);
     B_0[7+i] = bf_add(newk,oldk); 
   }
 
