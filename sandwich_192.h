@@ -29,7 +29,7 @@ bf_t bf_public_192(int id, int bit,bf_t delta);
 
 bf_t bf96_to_bf192(sandwich_192_param_t* para,sf_t in);
 
-bf_t bf96_convert_combine(sandwich_192_param_t* para,const bf_t in[BITS]);
+bf_t bf192_convert_combine(sandwich_192_param_t* para,const bf_t in[BITS]);
 
 void init_sandwich_192(sandwich_192_param_t* para);
 
