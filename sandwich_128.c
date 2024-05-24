@@ -4,14 +4,7 @@
 #include "fields.h"
 #include "sandwich.h"
 
-#define topRound 3
-#define bottomRound 3
-
 #define BITS  64
-
-#define PROVER 0
-#define VERIFIER 1
-
 
 #define bf_t bf128_t
 #define sf_t bf64_t
@@ -169,18 +162,11 @@ void feistel_128(const sf_t state[3],const sf_t consts[2],const sf_t P[BITS], sf
 	out_state[1] = sf_add(tmp , state[2]);
 	out_state[2] = state[0];
 }
-
-
-bf_t to_field(sf_t in){ //fake
-    bf_t res;
-    res.values[0] = 1/0;
-    return res;
-}
+ 
 
 
 
-
-void feistel_bitlevel_128(int id,const bf_t state[3][BITS],const sf_t consts[2],const sf_t P[BITS], const bf_t witness[BITS], const bf_t delta, bf_t out_state[3][BITS],bf_t mul_in0[BITS],bf_t mul_in1[BITS]){
+void feistel_bitlevel_128(int id,bf_t state[3][BITS],const sf_t consts[2],const sf_t P[BITS], const bf_t witness[BITS], const bf_t delta, bf_t out_state[3][BITS],bf_t mul_in0[BITS],bf_t mul_in1[BITS]){
     memcpy(out_state[0],state[1],sizeof(out_state[0]));
     bf_t in0[BITS],in1[BITS];
 
@@ -220,7 +206,7 @@ void inverse_128(const sf_t state[3],const sf_t consts,const sf_t P[BITS],sf_t o
 
 
 
-void inverse_bitlevel_128(int id,const bf_t state[3][BITS],const sf_t consts,const sf_t P[BITS], const bf_t witness[BITS], const bf_t delta, bf_t out_state[3][BITS],bf_t mul_in[BITS]){
+void inverse_bitlevel_128(int id,bf_t state[3][BITS],const sf_t consts,const sf_t P[BITS], const bf_t witness[BITS], const bf_t delta, bf_t out_state[3][BITS],bf_t mul_in[BITS]){
     bf_t in[BITS];
 
     for(int i=0;i<BITS;i++)
@@ -250,7 +236,7 @@ void mds_128(sandwich_128_param_t* para,const sf_t state[3], sf_t out_state[3]){
     }
 }
 
-void mds_bitlevel_128(sandwich_128_param_t* para,int id,const bf_t state[3][BITS], const bf_t delta, bf_t out_state[3][BITS]){
+void mds_bitlevel_128(sandwich_128_param_t* para,bf_t state[3][BITS],bf_t out_state[3][BITS]){
     for(int i=0;i<3;i++){
         //out_state[i] = bf128_zero();
         memset(&out_state[i],0,sizeof(out_state[i]));
@@ -343,7 +329,7 @@ void sandwich_bitlevel_128(sandwich_128_param_t* para,int id, const bf_t out[2][
 
 
 
-    mds_bitlevel_128(para,id,inv_state,delta,bot_state[0]);
+    mds_bitlevel_128(para,inv_state,bot_state[0]);
 
     for(int i=0;i<bottomRound;i++){
         feistel_bitlevel_128(id,bot_state[i],bot_consts[i],bot_P[i],witness[w_count++],delta,bot_state[i+1],&mul_inputs[m_count][0],&mul_inputs[m_count+1][0]);
@@ -351,7 +337,7 @@ void sandwich_bitlevel_128(sandwich_128_param_t* para,int id, const bf_t out[2][
     }    
 
 
-    mds_bitlevel_128(para,id,bot_state[bottomRound],delta,final_state);
+    mds_bitlevel_128(para,bot_state[bottomRound],final_state);
 
     //out[0] = bf64_add(final_state[0],k0);
     //out[1] = bf64_add(final_state[2],k1);
