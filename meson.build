@@ -280,7 +280,7 @@ faest_sources = files(
   'universal_hashing.c',
   'vc.c',
   'vole.c',
-  'sandwich.c',
+  'sandwich_128.c',
 )
 
 # header files to install
