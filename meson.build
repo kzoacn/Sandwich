@@ -154,7 +154,7 @@ param_128f.set('M', 1470)
 param_128f.set('N', 636)
 param_128f.set('W', 245)
 param_128f.set('D', 6)
-#parameter_sets += param_128f
+parameter_sets += param_128f
 
 
 
@@ -176,7 +176,7 @@ param_192f.set('M', 2196)
 param_192f.set('N', 948)
 param_192f.set('W', 366)
 param_192f.set('D', 6)
-#parameter_sets += param_192f
+parameter_sets += param_192f
 
 param_256f = configuration_data()
 param_256f.set('PARAM', '256F')
@@ -196,7 +196,7 @@ param_256f.set('M', 2934)
 param_256f.set('N', 1266)
 param_256f.set('W', 489)
 param_256f.set('D', 6)
-#parameter_sets += param_256f
+parameter_sets += param_256f
 
 
 

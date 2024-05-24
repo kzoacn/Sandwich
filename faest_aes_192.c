@@ -78,7 +78,7 @@ static void aes_prove_192(const uint8_t* w, const uint8_t* u, uint8_t** V, const
   // Step: 6
 
   // Step: 7
-  const unsigned int length_a = m/D*2 + 1;
+  const unsigned int length_a = 9 + 1;
   bf_t* A0                 = malloc(sizeof(bf_t) * length_a);
   bf_t* A1                 = malloc(sizeof(bf_t) * length_a);
 
@@ -217,7 +217,7 @@ static uint8_t* aes_verify_192(const uint8_t* d, uint8_t** Q, const uint8_t* cha
   bf_t* bf_q = column_to_row_major_and_shrink_V_192(Q, l);
 
   // Step: 13
-  const unsigned int length_b = m/D*2  + 1; 
+  const unsigned int length_b = 9  + 1; 
   bf_t* B_0                = malloc(sizeof(bf_t) * length_b);  
 
 
