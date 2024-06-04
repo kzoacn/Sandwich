@@ -78,6 +78,7 @@ void LinP_eval_bitlevel_128(const bf_t in[BITS], const sf_t LinP[BITS], bf_t out
                 out[i] = bf_add(out[i],in[j]); // TODO : constant time
         }
     }
+    
 }
 
 
@@ -96,12 +97,20 @@ void init_sandwich_128(sandwich_128_param_t* para){
 
     // TODO : random constants
 
-    alpha = bf128_zero();
+    alpha = bf_zero();
     for(int i=127;i>=0;i--){
         alpha = bf128_shift_left_1(alpha);
         if(alpha_128_s[i] == '1')
             alpha = bf128_add(alpha,bf128_one());
     }
+    para->power_of_alpha[0] = bf_one();
+    for(int i=1;i<BITS;i++)
+        para->power_of_alpha[i] = bf_mul(para->power_of_alpha[i-1],alpha);
+    bf_t two2  = bf128_from_bf64(2);
+
+    para->power_of_two[0] = bf_one();
+    for(int i=1;i<BITS*2;i++)
+        para->power_of_two[i] = bf_mul(para->power_of_two[i-1],two2);
 
     matMDS[0][0] = sf_from_bf64(1);
     matMDS[0][1] = sf_from_bf64(2);
@@ -133,7 +142,7 @@ void init_sandwich_128(sandwich_128_param_t* para){
         bot_P[i][0] = two;
         inv_P[0] = two;
         //todo random
-        for(int j=0;j<BITS;j++){
+        for(int j=1;j<BITS;j++){ 
             top_P[i][j]=sf_mul(top_P[i][j-1],two);
             bot_P[i][j]=sf_mul(bot_P[i][j-1],two);
             inv_P[j]=sf_mul(inv_P[j-1],two);
@@ -356,12 +365,13 @@ void bf64_to_bf128_bitlevel(sandwich_128_param_t* para,const bf_t in[BITS], bf_t
         out[j]=bf_zero();
 
     for(int i=0;i<BITS;i++){
+        a = para->power_of_alpha[i];
         for(int j=0;j<BITS*2;j++){
             bf64_t bit = bf_get_bit(a,j);
             if(bit)
                 out[j]=bf_add(out[j],in[i]);
         }
-        a=bf_mul(a,alpha);
+        //a=bf_mul(a,alpha);
     }
 }
 
@@ -372,8 +382,9 @@ bf_t bf128_convert_combine(sandwich_128_param_t* para,const bf_t in[BITS]){
     bf_t a = bf_one();
     bf_t res = bf_zero();
     for(int i=0;i<BITS*2;i++){
+        a = para->power_of_two[i];
         res = bf_add(res,bf_mul(out[i],a));
-        a=bf_mul(a,two);
+        //a=bf_mul(a,two);
     }
     return res;
 }

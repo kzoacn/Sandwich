@@ -330,8 +330,12 @@ double ck1=clock();
 
   // Step: 16
   uint8_t b_tilde[MAX_LAMBDA_BYTES];
+  double ck_prove=clock();
   aes_prove(w, u, V, owf_input, owf_output, chall_2, signature_a_tilde(sig, params), b_tilde,
             params);//TODO
+  double ck_prove2=clock();
+  //printf("prove time: %f\n",(ck_prove2-ck_prove)/CLOCKS_PER_SEC*1000);
+          
   free(V[0]);
   free(V);
   V = NULL;

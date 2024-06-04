@@ -103,6 +103,15 @@ void init_sandwich_192(sandwich_192_param_t* para){
             alpha = bf192_add(alpha,bf192_one());
     }
 
+    para->power_of_alpha[0] = bf_one();
+    for(int i=1;i<BITS;i++)
+        para->power_of_alpha[i] = bf_mul(para->power_of_alpha[i-1],alpha);
+    bf_t two2  = bf192_from_bf64(2);
+
+    para->power_of_two[0] = bf_one();
+    for(int i=1;i<BITS*2;i++)
+        para->power_of_two[i] = bf_mul(para->power_of_two[i-1],two2);
+
     matMDS[0][0] = 1;
     matMDS[0][1] = 2;
     matMDS[0][2] = 1;
@@ -133,7 +142,7 @@ void init_sandwich_192(sandwich_192_param_t* para){
         bot_P[i][0] = two;
         inv_P[0] = two;
         //todo random
-        for(int j=0;j<BITS;j++){
+        for(int j=1;j<BITS;j++){
             top_P[i][j]=sf_mul(top_P[i][j-1],two);
             bot_P[i][j]=sf_mul(bot_P[i][j-1],two);
             inv_P[j]=sf_mul(inv_P[j-1],two);
@@ -354,24 +363,25 @@ void bf96_to_bf192_bitlevel(sandwich_192_param_t* para,const bf_t in[BITS], bf_t
         out[j]=bf_zero();
 
     for(int i=0;i<BITS;i++){
+        a=para->power_of_alpha[i];
         for(int j=0;j<BITS*2;j++){
             bf64_t bit = bf_get_bit(a,j);
             if(bit)
                 out[j]=bf_add(out[j],in[i]);
         }
-        a=bf_mul(a,alpha);
+        //a=bf_mul(a,alpha);
     }
 }
 
 bf_t bf192_convert_combine(sandwich_192_param_t* para,const bf_t in[BITS]){
     bf_t out[BITS*2];
-    bf96_to_bf192_bitlevel(para,in,out);
-    bf_t two = bf192_from_bf64(2);
+    bf96_to_bf192_bitlevel(para,in,out); 
     bf_t a = bf_one();
     bf_t res = bf_zero();
     for(int i=0;i<BITS*2;i++){
+        a=para->power_of_two[i];
         res = bf_add(res,bf_mul(out[i],a));
-        a=bf_mul(a,two);
+        //a=bf_mul(a,two);
     }
     return res;
 }

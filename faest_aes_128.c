@@ -119,11 +119,10 @@ static void aes_prove_128(const uint8_t* w, const uint8_t* u, uint8_t** V, const
     }
   }
   
-
   sandwich_bitlevel(&param,PROVER,bf_out,bf_witness,fake_delta,bf_mul_inputs,bf_newk);
-
   //bf_t bf_w = sf_to_bf128(&param,witness[3]);
 
+double ck2=clock();
   int w_pos[] = {2,3,4,6,7,8};
   int mul_0_pos[] = {0,2,4,7,9,11};
   int mul_1_pos[] = {1,3,5,8,10,12};
@@ -171,6 +170,8 @@ static void aes_prove_128(const uint8_t* w, const uint8_t* u, uint8_t** V, const
 
   zk_hash(a_tilde, chall, A1, length_a - 1);
   zk_hash(b_tilde, chall, A0, length_a - 1);
+double ck3=clock();
+  //printf("sandwich_bitlevel time: %f\n",(ck3-ck2)/CLOCKS_PER_SEC*1000);
 
   free(A0);
   free(A1);

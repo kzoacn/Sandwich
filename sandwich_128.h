@@ -15,6 +15,8 @@
 typedef struct sandwich_128_param_t {
 
     bf_t alpha;
+    bf_t power_of_alpha[BITS];
+    bf_t power_of_two[BITS*2];
 
     sf_t matMDS[3][3];
     sf_t top_consts[4][2], bot_consts[4][2];
