@@ -273,6 +273,14 @@ static inline bf128_t bf128_and(bf128_t lhs, bf128_t rhs) {
   return lhs;
 }
 
+//bf128 all one
+ATTR_CONST ATTR_ALWAYS_INLINE static inline bf128_t bf128_all_one() {
+  bf128_t ret;
+  ret.values[0] = UINT64_MAX;
+  ret.values[1] = UINT64_MAX;
+  return ret;
+}
+
 ATTR_CONST ATTR_ALWAYS_INLINE static inline bf128_t bf128_flip(bf128_t x, bf64_t pos) {
   if (pos < 64) {
     x.values[0] ^= (UINT64_C(1) << pos);
@@ -359,7 +367,37 @@ ATTR_CONST bf128_t bf128_mul(bf128_t lhs, bf128_t rhs);
 ATTR_CONST bf128_t bf128_inv(bf128_t lhs);
 ATTR_PURE bf128_t bf128_sum_poly(const bf128_t* xs);
 
+ATTR_CONST
+static inline uint64_t bf128_bit_to_uint64_mask(bf128_t value, unsigned int bit) {
+  const unsigned int byte_idx = bit / 64;
+  const unsigned int bit_idx  = bit % 64;
+
+  return -((value.values[byte_idx] >> bit_idx) & 1);
+}
+
+ATTR_CONST
+static inline bf128_t bf128_bit_to_mask(bf128_t value, unsigned int bit) {
+  bf128_t ret;
+  ret.values[0] = ret.values[1] = bf128_bit_to_uint64_mask(value, bit);
+  return ret;
+}
+
 // GF(2^192) implemenation
+
+ATTR_CONST
+static inline uint64_t bf192_bit_to_uint64_mask(bf192_t value, unsigned int bit) {
+  const unsigned int byte_idx = bit / 64;
+  const unsigned int bit_idx  = bit % 64;
+
+  return -((value.values[byte_idx] >> bit_idx) & 1);
+}
+
+ATTR_CONST
+static inline bf192_t bf192_bit_to_mask(bf192_t value, unsigned int bit) {
+  bf192_t ret;
+  ret.values[0] = ret.values[1] = ret.values[2] = bf192_bit_to_uint64_mask(value, bit);
+  return ret;
+}
 
 ATTR_CONST
 static inline bf192_t bf192_shift_left_1(bf192_t value) {
@@ -436,6 +474,22 @@ ATTR_PURE bf192_t bf192_sum_poly(const bf192_t* xs);
 
 // GF(2^256) implementation
 
+
+ATTR_CONST
+static inline uint64_t bf256_bit_to_uint64_mask(bf256_t value, unsigned int bit) {
+  const unsigned int byte_idx = bit / 64;
+  const unsigned int bit_idx  = bit % 64;
+
+  return -((value.values[byte_idx] >> bit_idx) & 1);
+}
+
+ATTR_CONST
+static inline bf256_t bf256_bit_to_mask(bf256_t value, unsigned int bit) {
+  bf256_t ret;
+  ret.values[0] = ret.values[1] = ret.values[2] = ret.values[3] =
+      bf256_bit_to_uint64_mask(value, bit);
+  return ret;
+}
 
 ATTR_CONST
 static inline bf256_t bf256_shift_left_1(bf256_t value) {

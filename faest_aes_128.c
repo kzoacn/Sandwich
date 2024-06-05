@@ -122,11 +122,11 @@ static void aes_prove_128(const uint8_t* w, const uint8_t* u, uint8_t** V, const
   sandwich_bitlevel(&param,PROVER,bf_out,bf_witness,fake_delta,bf_mul_inputs,bf_newk);
   //bf_t bf_w = sf_to_bf128(&param,witness[3]);
 
-double ck2=clock();
   int w_pos[] = {2,3,4,6,7,8};
   int mul_0_pos[] = {0,2,4,7,9,11};
   int mul_1_pos[] = {1,3,5,8,10,12};
 
+double ck2=clock();
   for(int i=0;i<6;i++){
 
     int p = w_pos[i];

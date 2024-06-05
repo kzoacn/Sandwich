@@ -59,21 +59,6 @@ bf64_t bf64_inv(bf64_t in) {
 
 
 
-ATTR_CONST
-static inline uint64_t bf128_bit_to_uint64_mask(bf128_t value, unsigned int bit) {
-  const unsigned int byte_idx = bit / 64;
-  const unsigned int bit_idx  = bit % 64;
-
-  return -((value.values[byte_idx] >> bit_idx) & 1);
-}
-
-ATTR_CONST
-static inline bf128_t bf128_bit_to_mask(bf128_t value, unsigned int bit) {
-  bf128_t ret;
-  ret.values[0] = ret.values[1] = bf128_bit_to_uint64_mask(value, bit);
-  return ret;
-}
-
 bf128_t bf128_mul(bf128_t lhs, bf128_t rhs) {
   bf128_t result = {0};
   for (unsigned int idx = 0; idx != 128; ++idx) {
@@ -124,20 +109,6 @@ static inline bf192_t bf192_and(bf192_t lhs, bf192_t rhs) {
   return lhs;
 }
 
-ATTR_CONST
-static inline uint64_t bf192_bit_to_uint64_mask(bf192_t value, unsigned int bit) {
-  const unsigned int byte_idx = bit / 64;
-  const unsigned int bit_idx  = bit % 64;
-
-  return -((value.values[byte_idx] >> bit_idx) & 1);
-}
-
-ATTR_CONST
-static inline bf192_t bf192_bit_to_mask(bf192_t value, unsigned int bit) {
-  bf192_t ret;
-  ret.values[0] = ret.values[1] = ret.values[2] = bf192_bit_to_uint64_mask(value, bit);
-  return ret;
-}
 
 bf192_t bf192_mul(bf192_t lhs, bf192_t rhs) {
   bf192_t result = {0};
@@ -187,22 +158,6 @@ static inline bf256_t bf256_and(bf256_t lhs, bf256_t rhs) {
   return lhs;
 }
 
-
-ATTR_CONST
-static inline uint64_t bf256_bit_to_uint64_mask(bf256_t value, unsigned int bit) {
-  const unsigned int byte_idx = bit / 64;
-  const unsigned int bit_idx  = bit % 64;
-
-  return -((value.values[byte_idx] >> bit_idx) & 1);
-}
-
-ATTR_CONST
-static inline bf256_t bf256_bit_to_mask(bf256_t value, unsigned int bit) {
-  bf256_t ret;
-  ret.values[0] = ret.values[1] = ret.values[2] = ret.values[3] =
-      bf256_bit_to_uint64_mask(value, bit);
-  return ret;
-}
 
 bf256_t bf256_mul(bf256_t lhs, bf256_t rhs) {
   bf256_t result = {0};

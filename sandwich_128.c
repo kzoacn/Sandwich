@@ -136,17 +136,27 @@ void init_sandwich_128(sandwich_128_param_t* para){
     memset(bot_P,0,sizeof(bot_P));
     memset(inv_P,0,sizeof(inv_P));
 
+    srand(123);
     for(int i=0;i<4;i++){ 
-        sf_t two = sf_from_bf64(2);
-        top_P[i][0] = two;
-        bot_P[i][0] = two;
-        inv_P[0] = two;
-        //todo random
-        for(int j=1;j<BITS;j++){ 
-            top_P[i][j]=sf_mul(top_P[i][j-1],two);
-            bot_P[i][j]=sf_mul(bot_P[i][j-1],two);
-            inv_P[j]=sf_mul(inv_P[j-1],two);
-        } 
+        int num = BITS*2 / 6;
+
+        for(int j=0;j<BITS;j++){
+            top_P[i][j] = sf_zero();
+            bot_P[i][j] = sf_zero();
+            inv_P[j] = sf_zero();
+        }
+
+        for(int j=0;j<num;j++){
+            int x = rand() % BITS;
+            int y = rand() % BITS;
+            int z = rand() % BITS;
+            top_P[i][x] = sf_from_bf64(1);
+            bot_P[i][y] = sf_from_bf64(1);
+            
+            if(i==0)
+                inv_P[z] = sf_from_bf64(1);
+        }
+
     }
 
 }
@@ -363,13 +373,18 @@ void bf64_to_bf128_bitlevel(sandwich_128_param_t* para,const bf_t in[BITS], bf_t
 
     for(int j=0;j<BITS*2;j++)
         out[j]=bf_zero();
+    
+    bf_t mask[2];
+    mask[0]=bf128_zero();
+    mask[1]=bf128_all_one();
 
     for(int i=0;i<BITS;i++){
         a = para->power_of_alpha[i];
         for(int j=0;j<BITS*2;j++){
             bf64_t bit = bf_get_bit(a,j);
-            if(bit)
-                out[j]=bf_add(out[j],in[i]);
+            bf_t m = mask[bit];
+            //if(bit)
+            out[j]=bf_add(out[j],bf128_and(m,in[i]));
         }
         //a=bf_mul(a,alpha);
     }
@@ -381,10 +396,15 @@ bf_t bf128_convert_combine(sandwich_128_param_t* para,const bf_t in[BITS]){
     bf_t two = bf128_from_bf64(2);
     bf_t a = bf_one();
     bf_t res = bf_zero();
-    for(int i=0;i<BITS*2;i++){
+
+    for(int i=BITS*2-1;i>=0;i--){
         a = para->power_of_two[i];
-        res = bf_add(res,bf_mul(out[i],a));
-        //a=bf_mul(a,two);
+        //res = res<<1 
+        const uint64_t mask = bf128_bit_to_uint64_mask(res, 127);
+        res                 = bf128_shift_left_1(res);
+        res.values[0] ^= (mask & bf128_modulus);
+
+        res = bf_add(res,out[i]);
     }
     return res;
 }
